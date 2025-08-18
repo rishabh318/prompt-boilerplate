@@ -6,7 +6,7 @@ services:
     env_file:
       - ./ai_services/.env
     ports:
-      - "8004:8000"
+      - "8002:8000"
 
   minio:
     image: minio/minio
@@ -21,21 +21,22 @@ services:
     volumes:
       - minio_data:/data
 
-  media-api:
-    build:
-      context: ./media-service
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault
+    restart: unless-stopped
     ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    depends_on:
-      - minio
+      - "8200:8200"
     environment:
-      MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
-      MINIO_BUCKET: media-bucket
-      USE_SSL: "false"
+      VAULT_DEV_ROOT_TOKEN_ID: root
+      VAULT_ADDR: http://0.0.0.0:8200
+    cap_add:
+      - IPC_LOCK
+    command: server -dev -dev-root-token-id=root
+    volumes:
+      - ./vault/config:/vault/config
+      - ./vault/file:/vault/file
+      - ./vault/logs:/vault/logs
 
 volumes:
   minio_data:
